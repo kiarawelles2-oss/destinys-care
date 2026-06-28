@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Products
+model Product {
+  id        String   @id @default(cuid())
+  name      String
+  description String
+  price     Float
+  image     String?
+  category  String   // "Skin Care", "Hair Care", "Body Care", "Gift Sets"
+  stock     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  orderItems OrderItem[]
+}
+
+// Customers
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  address   String
+  city      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  orders Order[]
+}
+
+// Orders
+model Order {
+  id            String   @id @default(cuid())
+  orderNumber   String   @unique
+  customer      Customer @relation(fields: [customerId], references: [id])
+  customerId    String
+  items         OrderItem[]
+  totalAmount   Float
+  deliveryFee   Float
+  paymentMethod String   // "Contant bij levering" or "Bankoverschrijving"
+  paid          Boolean  @default(false)
+  status        String   @default("Nieuw") // "Nieuw", "Bevestigd", "Onderweg", "Afgeleverd", "Geannuleerd"
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  delivery      Delivery?
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+}
+
+// Deliveries
+model Delivery {
+  id          String   @id @default(cuid())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String   @unique
+  driver      Driver?  @relation(fields: [driverId], references: [id])
+  driverId    String?
+  status      String   @default("Pending") // "Pending", "In Transit", "Delivered"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Drivers
+model Driver {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  vehicle   String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  deliveries Delivery[]
+}
+
+// Expenses
+model Expense {
+  id          String   @id @default(cuid())
+  date        DateTime
+  description String
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Delivery Settings
+model DeliverySetting {
+  id                  String   @id @default(cuid())
+  paraMariboFee       Float    @default(0)    // Gratis
+  outsideParaMariboFee Float   @default(150)  // SRD 150
+  updatedAt           DateTime @updatedAt
+}
